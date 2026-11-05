@@ -4,18 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Diya Wall</title>
-<meta name="description" content="Light diyas and win up to ₹600 on Swiggy Food, Instamart and Dineout. ₹10 Free Cash for every diya you light.">
+<meta name="description" content="Light diyas and win up to ₹600 on Swiggy Food, Instamart and Dineout. Each diya earns ₹10 on Food and ₹10 on Instamart.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://diyaindia.github.io/diya-wall/">
 <meta property="og:title" content="Diya Wall">
-<meta property="og:description" content="Light diyas and win up to ₹600 on Swiggy Food, Instamart and Dineout. ₹10 Free Cash for every diya you light.">
+<meta property="og:description" content="Light diyas and win up to ₹600 on Swiggy Food, Instamart and Dineout. Each diya earns ₹10 on Food and ₹10 on Instamart.">
 <meta property="og:image" content="https://diyaindia.github.io/diya-wall/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Diya Wall: win up to ₹600 on Swiggy">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Diya Wall">
-<meta name="twitter:description" content="Light diyas and win up to ₹600 on Swiggy. ₹10 Free Cash for every diya you light.">
+<meta name="twitter:description" content="Light diyas and win up to ₹600 on Swiggy Food, Instamart and Dineout.">
 <meta name="twitter:image" content="https://diyaindia.github.io/diya-wall/og.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪔</text></svg>">
 <style>
@@ -40,6 +40,8 @@
   .stat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
   .stat b{display:block;font-size:24px;color:var(--gold)}
   .stat span{font-size:13px;color:var(--mute)}
+  .stat b span{font-size:inherit;color:inherit}
+  .stat .of{font-size:15px;color:var(--mute);font-weight:600;margin-left:2px}
   .go{display:block;text-align:center;text-decoration:none;font-weight:700;font-size:19px;color:#2a1000;
     background:linear-gradient(180deg,var(--gold),var(--gold2));border-radius:16px;padding:18px;
     box-shadow:0 8px 30px -8px #ff9a2a88;transition:transform .1s}
@@ -79,12 +81,12 @@
   <ol class="steps">
     <li><span>Open this page on your phone.</span></li>
     <li><span>Tap <b>Light the next diya</b>. It opens in the Swiggy app.</span></li>
-    <li><span>Come back and tap again. Every diya you light earns you ₹10 Free Cash.</span></li>
+    <li><span>Come back and tap again. Each diya earns you ₹10 on Food and ₹10 on Instamart, up to 15 diyas.</span></li>
   </ol>
 
   <div class="stats">
     <div class="stat"><b id="nLive">…</b><span>diyas waiting</span></div>
-    <div class="stat"><b id="nMine">0</b><span>you've lit</span></div>
+    <div class="stat"><b><span id="nMine">0</span><small class="of">/15</small></b><span id="mineLbl">you've lit</span></div>
   </div>
 
   <a id="go" class="go off" target="_blank" rel="noopener">Loading…</a>
@@ -115,6 +117,7 @@ const store = {
 };
 let done = store.get(), links = [], filter = "todo";
 const $ = id => document.getElementById(id);
+const MAX = 15; // ₹150 cap each on Food and Instamart at ₹10 a diya
 const SRC = {x:"X", reddit:"Reddit", submitted:"Added", web:"Web"};
 
 function ago(iso){
@@ -128,7 +131,9 @@ function mark(url){ done.add(url); store.set(done); render(); }
 function render(){
   const todo = links.filter(l => !done.has(l.url));
   $("nLive").textContent = todo.length;
-  $("nMine").textContent = links.filter(l => done.has(l.url)).length;
+  const lit = links.filter(l => done.has(l.url)).length;
+  $("nMine").textContent = Math.min(lit, MAX);
+  $("mineLbl").textContent = lit >= MAX ? "max Free Cash earned 🎉" : "you've lit";
 
   const go = $("go");
   if (todo.length){
