@@ -205,9 +205,9 @@ document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click
   render();
 }));
 
-// Added links go to a Google Form; the scheduled job reads its responses into links.json.
-const FORM_ACTION = "__FORM_ACTION__";
-const FORM_FIELD = "__FORM_FIELD__";
+// Added links go to an anonymous ntfy.sh topic (no accounts, no keys).
+// The scheduled job reads the topic every 15 minutes and re-checks each link before it goes on the wall.
+const INBOX = "https://ntfy.sh/diyawall-in-9552aec4f084";
 // Strict link check. Only this year's campaign share links are accepted:
 //   https://r.swiggy.com/light-diya/aWPhpVsRkD-<11 letters or digits>
 // People may paste Swiggy's whole share message, so the link is pulled out of the text,
@@ -248,17 +248,10 @@ $("addForm").addEventListener("submit", async e => {
   const url = res.url;
   mine.add(url); saveMine();
   if (links.some(l => l.url === url)){ msg.textContent = "Your link is already on the wall."; msg.classList.add("ok"); render(); return; }
-  if (FORM_ACTION.startsWith("__")){
-    // Google Form not set up yet: fall back to the repo's issue form, prefilled.
-    window.open("https://github.com/diyaindia/diya-wall/issues/new?template=diya.yml&link=" + encodeURIComponent(url), "_blank", "noopener");
-    msg.textContent = "Submit the page that opened to add your link.";
-    msg.classList.add("ok");
-    render();
-    return;
-  }
   btn.disabled = true;
   try {
-    await fetch(FORM_ACTION, {method: "POST", mode: "no-cors", body: new URLSearchParams({[FORM_FIELD]: url})});
+    const r = await fetch(INBOX, {method: "POST", body: url});
+    if (!r.ok) throw new Error(r.status);
     $("addInput").value = "";
     msg.textContent = "Added! Others will see it within 15 minutes.";
     msg.classList.add("ok");

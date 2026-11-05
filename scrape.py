@@ -76,25 +76,23 @@ def from_github():
     return out
 
 
-def from_form():
-    """Links added on the page go to a Google Form; its response sheet is published as CSV."""
-    url = os.environ.get("FORM_CSV_URL", "")
-    if not url:
-        return []
-    import csv, io
-    req = urllib.request.Request(url, headers={"User-Agent": UA})
-    text = urllib.request.urlopen(req, timeout=30).read().decode("utf-8")
+INBOX = os.environ.get("DIYA_INBOX", "https://ntfy.sh/diyawall-in-9552aec4f084")
+
+
+def from_inbox():
+    """Links added on the page are posted to an anonymous ntfy.sh topic, which keeps them for 12 hours."""
+    req = urllib.request.Request(INBOX + "/json?poll=1&since=12h", headers={"User-Agent": UA})
     out = []
-    for row in list(csv.reader(io.StringIO(text)))[1:]:
-        if len(row) < 2:
-            continue
-        try:  # Sheets writes form timestamps as M/D/YYYY H:MM:SS in the sheet's time zone (set to IST)
-            at = datetime.strptime(row[0], "%m/%d/%Y %H:%M:%S").replace(tzinfo=timezone(timedelta(hours=5, minutes=30)))
-            at = at.astimezone(timezone.utc).isoformat(timespec="seconds")
-        except ValueError:
-            at = datetime.now(timezone.utc).isoformat(timespec="seconds")
-        for l in links_in(row[1]):
-            out.append({"url": l, "src": "submitted", "at": at, "ref": ""})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        for line in r.read().decode("utf-8").splitlines():
+            try:
+                ev = json.loads(line)
+            except ValueError:
+                continue
+            if ev.get("event") != "message":
+                continue
+            for l in links_in(ev.get("message", ""))[:1]:  # one link per submission
+                out.append({"url": l, "src": "submitted", "at": iso(ev["time"]), "ref": ""})
     return out
 
 
@@ -167,7 +165,7 @@ def main():
         old = []
     old = [dict(l, url=canonical(l["url"])) for l in old if canonical(l["url"])]
     seen = {key(l["url"]): l for l in old}
-    for name, fn in (("form", from_form), ("github", from_github), ("reddit", from_reddit), ("x", from_x)):
+    for name, fn in (("inbox", from_inbox), ("github", from_github), ("reddit", from_reddit), ("x", from_x)):
         try:
             got = fn()
         except Exception as e:  # one source failing must not wipe the wall

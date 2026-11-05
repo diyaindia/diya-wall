@@ -29,7 +29,6 @@ jobs:
           REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
           REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
           X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
-          FORM_CSV_URL: ${{ vars.FORM_CSV_URL }}
         run: python scrape.py
       - name: Commit if changed
         run: |
