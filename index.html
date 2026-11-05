@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Diya Wall</title>
-<meta name="description" content="Light diyas and win up to ₹600 on Swiggy Food, Instamart and Dineout. Each diya earns ₹10 on Food and ₹10 on Instamart.">
+<title>Swiggy Diya Loot</title>
+<meta name="description" content="Loot up to ₹600 from Swiggy this Diwali. Every diya you light drops ₹10 on Food and ₹10 on Instamart.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://diyaindia.github.io/diya-wall/">
-<meta property="og:title" content="Diya Wall">
-<meta property="og:description" content="Light diyas and win up to ₹600 on Swiggy Food, Instamart and Dineout. Each diya earns ₹10 on Food and ₹10 on Instamart.">
+<meta property="og:title" content="Swiggy Diya Loot 🪔">
+<meta property="og:description" content="Loot up to ₹600 from Swiggy this Diwali. Every diya you light drops ₹10 on Food and ₹10 on Instamart.">
 <meta property="og:image" content="https://diyaindia.github.io/diya-wall/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Diya Wall: win up to ₹600 on Swiggy">
+<meta property="og:image:alt" content="Swiggy Diya Loot: loot up to ₹600 from Swiggy">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Diya Wall">
-<meta name="twitter:description" content="Light diyas and win up to ₹600 on Swiggy Food, Instamart and Dineout.">
+<meta name="twitter:title" content="Swiggy Diya Loot 🪔">
+<meta name="twitter:description" content="Loot up to ₹600 from Swiggy this Diwali. One tap per diya.">
 <meta name="twitter:image" content="https://diyaindia.github.io/diya-wall/og.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪔</text></svg>">
 <style>
@@ -90,41 +90,41 @@
 </head>
 <body>
 <main>
-  <h1>🪔 Diya Wall</h1>
-  <p class="sub"><b>Win up to ₹600</b> on Swiggy</p>
+  <h1>🪔 Swiggy Diya Loot</h1>
+  <p class="sub">Loot <b>up to ₹600</b> from Swiggy this Diwali 💸</p>
   <div class="earn">
     <div><b>₹150</b><span>Food Free Cash</span></div>
     <div><b>₹150</b><span>Instamart Free Cash</span></div>
     <div><b>₹300</b><span>Dineout DineCash</span></div>
   </div>
-  <p class="earnnote">₹10 on Food and ₹10 on Instamart for every diya you light. ₹300 DineCash once you light 3 diyas.</p>
+  <p class="earnnote">Every diya you light drops ₹10 on Food + ₹10 on Instamart. Light 3 and ₹300 DineCash unlocks.</p>
   <ol class="steps">
-    <li><span>Open this page on your phone.</span></li>
-    <li><span>Tap <b>Light the next diya</b>. It opens in the Swiggy app.</span></li>
-    <li><span>Come back and tap again.</span></li>
+    <li><span>Open this on your phone.</span></li>
+    <li><span>Tap <b>Loot the next diya</b>. Swiggy opens, the diya lights.</span></li>
+    <li><span>Come back. Loot again. Repeat till you max out.</span></li>
   </ol>
 
   <div class="stats">
-    <div class="stat"><b id="nLive">…</b><span>diyas waiting</span></div>
-    <div class="stat"><b id="nMine">0</b><span id="mineLbl">you've lit</span></div>
+    <div class="stat"><b id="nLive">…</b><span>diyas up for grabs</span></div>
+    <div class="stat"><b id="nMine">0</b><span id="mineLbl">you've looted</span></div>
   </div>
 
   <a id="go" class="go off" target="_blank" rel="noopener">Loading…</a>
-  <p class="hint">Ends 9 Nov</p>
+  <p class="hint">Loot closes 9 Nov ⏳</p>
 
   <form id="addForm" class="addbox" novalidate>
-    <label for="addInput">Add your diya link so others light it</label>
+    <label for="addInput">Drop your diya link. Everyone who lights it pays you too.</label>
     <div class="addrow">
       <input id="addInput" type="url" inputmode="url" autocomplete="off" placeholder="https://r.swiggy.com/light-diya/aWPhpVsRkD-..." maxlength="600">
-      <button type="submit">Add</button>
+      <button type="submit">Drop</button>
     </div>
     <p id="addMsg" class="addmsg" role="status"></p>
   </form>
 
   <div class="row">
-    <h2>All links</h2>
+    <h2>Loot list</h2>
     <div class="tabs" role="group" aria-label="Filter">
-      <button data-f="todo" aria-pressed="true">To light</button>
+      <button data-f="todo" aria-pressed="true">To loot</button>
       <button data-f="all" aria-pressed="false">All</button>
     </div>
   </div>
@@ -162,23 +162,23 @@ function render(){
   $("nLive").textContent = todo.length;
   const lit = links.filter(l => done.has(l.url)).length;
   $("nMine").textContent = lit;
-  $("mineLbl").textContent = lit >= MAX ? "max Free Cash earned 🎉" : "you've lit";
+  $("mineLbl").textContent = lit >= MAX ? "max loot collected 🎉" : "you've looted";
 
   const go = $("go");
   if (todo.length){
     go.href = todo[0].url;
-    go.textContent = "Light the next diya →";
+    go.textContent = "Loot the next diya →";
     go.classList.remove("off");
   } else {
     go.removeAttribute("href");
-    go.textContent = links.length ? "All lit! Check back soon" : "No links yet";
+    go.textContent = links.length ? "All looted! Fresh drops soon" : "No loot yet";
     go.classList.add("off");
   }
 
   const shown = filter === "todo" ? todo : links;
   $("list").innerHTML = "";
   if (!shown.length){
-    $("list").innerHTML = '<li class="empty" style="display:block;border:0;background:none">Nothing here yet.</li>';
+    $("list").innerHTML = '<li class="empty" style="display:block;border:0;background:none">Nothing to loot right now.</li>';
     return;
   }
   for (const l of shown.slice(0, 200)){
@@ -192,7 +192,7 @@ function render(){
     if (l.ref){ const a = document.createElement("a"); a.href = l.ref; a.target = "_blank"; a.rel = "noopener"; a.textContent = "post"; sm.append(a); }
     const open = li.querySelector(".open");
     open.href = l.url;
-    open.textContent = done.has(l.url) ? "Lit ✓" : "Light";
+    open.textContent = done.has(l.url) ? "Looted ✓" : "Loot";
     open.addEventListener("click", () => setTimeout(() => mark(l.url), 50));
     $("list").append(li);
   }
@@ -247,13 +247,13 @@ $("addForm").addEventListener("submit", async e => {
   if (res.error){ msg.textContent = res.error; msg.classList.add("err"); return; }
   const url = res.url;
   mine.add(url); saveMine();
-  if (links.some(l => l.url === url)){ msg.textContent = "Your link is already on the wall."; msg.classList.add("ok"); render(); return; }
+  if (links.some(l => l.url === url)){ msg.textContent = "Your link is already on the loot list."; msg.classList.add("ok"); render(); return; }
   btn.disabled = true;
   try {
     const r = await fetch(INBOX, {method: "POST", body: url});
     if (!r.ok) throw new Error(r.status);
     $("addInput").value = "";
-    msg.textContent = "Added! Others will see it within 15 minutes.";
+    msg.textContent = "Dropped! It hits the loot list within 15 minutes.";
     msg.classList.add("ok");
   } catch {
     msg.textContent = "Couldn't add it. Check your connection and try again.";
