@@ -115,7 +115,7 @@
   <form id="addForm" class="addbox" novalidate>
     <label for="addInput">Add your diya link so others light it</label>
     <div class="addrow">
-      <input id="addInput" type="url" inputmode="url" autocomplete="off" placeholder="https://r.swiggy.com/light-diya/...">
+      <input id="addInput" type="url" inputmode="url" autocomplete="off" placeholder="https://r.swiggy.com/light-diya/aWPhpVsRkD-..." maxlength="600">
       <button type="submit">Add</button>
     </div>
     <p id="addMsg" class="addmsg" role="status"></p>
@@ -208,15 +208,44 @@ document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click
 // Added links go to a Google Form; the scheduled job reads its responses into links.json.
 const FORM_ACTION = "__FORM_ACTION__";
 const FORM_FIELD = "__FORM_FIELD__";
-const LINK_RE = /https?:\/\/(?:r\.swiggy\.com\/light-diya(?:-test)?\/[A-Za-z0-9_\-]+|swiggy\.onelink\.me\/[A-Za-z0-9]+\/[A-Za-z0-9_\-]+|(?:www\.)?swiggy\.com\/light-diya\/[A-Za-z0-9_\-]+)/i;
+// Strict link check. Only this year's campaign share links are accepted:
+//   https://r.swiggy.com/light-diya/aWPhpVsRkD-<11 letters or digits>
+// People may paste Swiggy's whole share message, so the link is pulled out of the text,
+// but exactly one link must be in it, and it must match the format exactly.
+const CAMPAIGN = "aWPhpVsRkD";
+const CODE_RE = /^[A-Za-z0-9]{11}$/;
+function checkLink(raw){
+  const text = String(raw || "").trim();
+  if (!text) return {error: "Paste your Light a Diya link."};
+  if (text.length > 600) return {error: "That's too long. Paste just your Light a Diya link."};
+  const found = new Map();
+  const re = /(?:https?:\/\/)?r\.swiggy\.com\/light-diya\/([^\s"'<>]*)/gi;
+  let m;
+  while ((m = re.exec(text))){
+    const before = text[m.index - 1];
+    if (before && /[\w.\-@\/]/.test(before)) continue;       // e.g. fake-r.swiggy.com or x.com/r.swiggy.com
+    if (m[0].startsWith("http://")) return {error: "Use the https:// link exactly as Swiggy shared it."};
+    let seg = m[1].replace(/[.,!?)\]}>…]+$/, "");             // trailing punctuation from a sentence
+    if (/[?#]/.test(seg) || seg.includes("/")) return {error: "Remove anything after the link code."};
+    found.set(seg, true);
+  }
+  if (!found.size) return {error: "That isn't a Light a Diya link. Copy it from the Share button on Swiggy's Light a Diya page."};
+  if (found.size > 1) return {error: "Paste one link at a time."};
+  const seg = [...found.keys()][0];
+  const dash = seg.indexOf("-");
+  const camp = dash < 0 ? seg : seg.slice(0, dash), code = dash < 0 ? "" : seg.slice(dash + 1);
+  if (camp !== CAMPAIGN) return {error: "This link isn't from this year's Light a Diya."};
+  if (!CODE_RE.test(code)) return {error: code.length < 11 ? "This link looks cut off. Copy the full link from Swiggy." : "This link has extra characters. Copy it again from Swiggy."};
+  return {url: `https://r.swiggy.com/light-diya/${CAMPAIGN}-${code}`};
+}
 
 $("addForm").addEventListener("submit", async e => {
   e.preventDefault();
   const msg = $("addMsg"), btn = $("addForm").querySelector("button");
-  const m = $("addInput").value.match(LINK_RE);
+  const res = checkLink($("addInput").value);
   msg.className = "addmsg";
-  if (!m){ msg.textContent = "Paste the link from the Share button on Swiggy's Light a Diya page."; msg.classList.add("err"); return; }
-  const url = m[0];
+  if (res.error){ msg.textContent = res.error; msg.classList.add("err"); return; }
+  const url = res.url;
   mine.add(url); saveMine();
   if (links.some(l => l.url === url)){ msg.textContent = "Your link is already on the wall."; msg.classList.add("ok"); render(); return; }
   if (FORM_ACTION.startsWith("__")){

@@ -21,18 +21,29 @@ OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "links.json")
 KEEP = 600  # newest links kept on the wall
 UA = "diya-wall/1.0 (link aggregator)"
 
-LINK_RE = re.compile(
-    r"https?://(?:"
-    r"r\.swiggy\.com/light-diya(?:-test)?/[A-Za-z0-9_\-]+"
-    r"|swiggy\.onelink\.me/[A-Za-z0-9]+/[A-Za-z0-9_\-]+"
-    r"|(?:www\.)?swiggy\.com/light-diya/[A-Za-z0-9_\-]+"
-    r")",
-    re.IGNORECASE,
-)
+# Strict: only this year's campaign share links, in exactly this shape.
+CAMPAIGN = os.environ.get("DIYA_CAMPAIGN", "aWPhpVsRkD")
+FIND_RE = re.compile(r"(?<![\w.\-@/])https://r\.swiggy\.com/light-diya/([A-Za-z0-9_\-]+)", re.IGNORECASE)
+VALID_RE = re.compile(r"https://r\.swiggy\.com/light-diya/" + re.escape(CAMPAIGN) + r"-[A-Za-z0-9]{11}")
+
+
+def canonical(url):
+    """Return the canonical link if url is a valid share link, else None."""
+    m = re.fullmatch(r"https://r\.swiggy\.com/light-diya/([A-Za-z0-9_\-]+)", (url or "").strip(), re.IGNORECASE)
+    if not m:
+        return None
+    u = "https://r.swiggy.com/light-diya/" + m.group(1)  # host lowercased, code kept case-sensitive
+    return u if VALID_RE.fullmatch(u) else None
 
 
 def links_in(text):
-    return [m.group(0) for m in LINK_RE.finditer(text or "")]
+    out = []
+    for m in FIND_RE.finditer(text or ""):
+        # the code must end the link: a letter, digit, - or _ right after a valid code means it is longer
+        u = canonical("https://r.swiggy.com/light-diya/" + m.group(1))
+        if u and u not in out:
+            out.append(u)
+    return out
 
 
 def get(url, headers=None, data=None):
@@ -154,6 +165,7 @@ def main():
         old = json.load(open(OUT))["links"]
     except Exception:
         old = []
+    old = [dict(l, url=canonical(l["url"])) for l in old if canonical(l["url"])]
     seen = {key(l["url"]): l for l in old}
     for name, fn in (("form", from_form), ("github", from_github), ("reddit", from_reddit), ("x", from_x)):
         try:
