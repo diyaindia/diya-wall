@@ -92,7 +92,7 @@ const store = {
 };
 let done = store.get(), links = [], filter = "todo";
 const $ = id => document.getElementById(id);
-const SRC = {x:"X", reddit:"Reddit", submitted:"Added"};
+const SRC = {x:"X", reddit:"Reddit", submitted:"Added", web:"Web"};
 
 function ago(iso){
   const m = Math.max(1, Math.round((Date.now() - new Date(iso)) / 60000));
