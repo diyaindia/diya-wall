@@ -31,6 +31,11 @@
   h1{font-size:30px;margin:0 0 6px;letter-spacing:-.01em}
   .sub{color:var(--mute);margin:0 0 14px;font-size:17px}
   .sub b{color:var(--gold)}
+  .earn{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 8px}
+  .earn div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 10px 9px}
+  .earn b{display:block;font-size:22px;color:var(--gold);line-height:1.1}
+  .earn span{display:block;font-size:12px;line-height:1.3;color:var(--mute);margin-top:3px}
+  .earnnote{font-size:13px;color:var(--mute);margin:0 0 18px}
   .steps{margin:0 0 20px;padding:0;list-style:none;counter-reset:s}
   .steps li{counter-increment:s;display:flex;gap:10px;align-items:flex-start;margin:0 0 8px;
     background:none;border:0;padding:0;border-radius:0}
@@ -68,8 +73,17 @@
     padding:6px 12px;font-size:14px;font-weight:600}
   li.done .open{color:var(--ok);border-color:var(--ok)}
   .empty{color:var(--mute);text-align:center;padding:24px 0}
-  .add{display:block;text-align:center;margin:26px 0 0;padding:14px;border-radius:14px;
-    border:1px dashed var(--line);color:var(--ink);text-decoration:none}
+  .addbox{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 26px}
+  .addbox label{display:block;font-weight:600;font-size:15px;margin:0 0 10px}
+  .addrow{display:flex;gap:8px}
+  .addrow input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:10px;
+    color:var(--ink);font:inherit;font-size:16px;padding:10px 12px}
+  .addrow input:focus{outline:none;border-color:var(--gold)}
+  .addrow button{flex:none;background:var(--gold);color:#2a1000;border:0;border-radius:10px;font:inherit;
+    font-weight:700;padding:0 18px;cursor:pointer}
+  .addrow button:disabled{opacity:.5}
+  .addmsg{font-size:13px;margin:8px 0 0;color:var(--mute);min-height:0}
+  .addmsg.ok{color:var(--ok)} .addmsg.err{color:#ff8a8a}
   footer{color:var(--mute);font-size:12px;text-align:center;margin-top:28px}
   footer button{background:none;border:0;color:inherit;text-decoration:underline;font:inherit;cursor:pointer}
 </style>
@@ -77,20 +91,35 @@
 <body>
 <main>
   <h1>🪔 Diya Wall</h1>
-  <p class="sub"><b>Win up to ₹600</b> on Swiggy Food, Instamart and Dineout.</p>
+  <p class="sub"><b>Win up to ₹600</b> on Swiggy</p>
+  <div class="earn">
+    <div><b>₹150</b><span>Food Free Cash</span></div>
+    <div><b>₹150</b><span>Instamart Free Cash</span></div>
+    <div><b>₹300</b><span>Dineout DineCash</span></div>
+  </div>
+  <p class="earnnote">₹10 on Food and ₹10 on Instamart for every diya you light. ₹300 DineCash once you light 3 diyas.</p>
   <ol class="steps">
     <li><span>Open this page on your phone.</span></li>
     <li><span>Tap <b>Light the next diya</b>. It opens in the Swiggy app.</span></li>
-    <li><span>Come back and tap again. Each diya earns you ₹10 on Food and ₹10 on Instamart, up to 15 diyas.</span></li>
+    <li><span>Come back and tap again.</span></li>
   </ol>
 
   <div class="stats">
     <div class="stat"><b id="nLive">…</b><span>diyas waiting</span></div>
-    <div class="stat"><b><span id="nMine">0</span><small class="of">/15</small></b><span id="mineLbl">you've lit</span></div>
+    <div class="stat"><b id="nMine">0</b><span id="mineLbl">you've lit</span></div>
   </div>
 
   <a id="go" class="go off" target="_blank" rel="noopener">Loading…</a>
   <p class="hint">Ends 9 Nov</p>
+
+  <form id="addForm" class="addbox" novalidate>
+    <label for="addInput">Add your diya link so others light it</label>
+    <div class="addrow">
+      <input id="addInput" type="url" inputmode="url" autocomplete="off" placeholder="https://r.swiggy.com/light-diya/...">
+      <button type="submit">Add</button>
+    </div>
+    <p id="addMsg" class="addmsg" role="status"></p>
+  </form>
 
   <div class="row">
     <h2>All links</h2>
@@ -101,11 +130,8 @@
   </div>
   <ul id="list"></ul>
 
-  <a id="add" class="add" target="_blank" rel="noopener">➕ Add your link to the wall</a>
-
   <footer>
-    <span id="upd"></span> ·
-    <button id="reset">Reset my progress</button>
+    <span id="upd"></span>
   </footer>
 </main>
 
@@ -116,6 +142,9 @@ const store = {
   set(s){ try { localStorage.setItem(DONE_KEY, JSON.stringify([...s])); } catch {} }
 };
 let done = store.get(), links = [], filter = "todo";
+const MINE_KEY = "diya-wall-mine";
+let mine = (() => { try { return new Set(JSON.parse(localStorage.getItem(MINE_KEY) || "[]")); } catch { return new Set(); } })();
+function saveMine(){ try { localStorage.setItem(MINE_KEY, JSON.stringify([...mine])); } catch {} }
 const $ = id => document.getElementById(id);
 const MAX = 15; // ₹150 cap each on Food and Instamart at ₹10 a diya
 const SRC = {x:"X", reddit:"Reddit", submitted:"Added", web:"Web"};
@@ -129,10 +158,10 @@ function short(u){ return "Diya " + u.replace(/\/+$/, "").split("/").pop(); }
 function mark(url){ done.add(url); store.set(done); render(); }
 
 function render(){
-  const todo = links.filter(l => !done.has(l.url));
+  const todo = links.filter(l => !done.has(l.url) && !mine.has(l.url));
   $("nLive").textContent = todo.length;
   const lit = links.filter(l => done.has(l.url)).length;
-  $("nMine").textContent = Math.min(lit, MAX);
+  $("nMine").textContent = lit;
   $("mineLbl").textContent = lit >= MAX ? "max Free Cash earned 🎉" : "you've lit";
 
   const go = $("go");
@@ -175,18 +204,50 @@ document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click
   document.querySelectorAll(".tabs button").forEach(x => x.setAttribute("aria-pressed", x === b));
   render();
 }));
-$("reset").addEventListener("click", () => { if (confirm("Forget which diyas you've lit on this phone?")) { done = new Set(); store.set(done); render(); } });
 
-// "Add your link" opens the repo's issue form. Works out the repo from <owner>.github.io/<repo>/.
-(function(){
-  const owner = location.hostname.endsWith(".github.io") ? location.hostname.split(".")[0] : "OWNER";
-  const repo = location.pathname.split("/").filter(Boolean)[0] || "diya-wall";
-  $("add").href = `https://github.com/${owner}/${repo}/issues/new?template=diya.yml`;
-})();
+// Added links go to a Google Form; the scheduled job reads its responses into links.json.
+const FORM_ACTION = "__FORM_ACTION__";
+const FORM_FIELD = "__FORM_FIELD__";
+const LINK_RE = /https?:\/\/(?:r\.swiggy\.com\/light-diya(?:-test)?\/[A-Za-z0-9_\-]+|swiggy\.onelink\.me\/[A-Za-z0-9]+\/[A-Za-z0-9_\-]+|(?:www\.)?swiggy\.com\/light-diya\/[A-Za-z0-9_\-]+)/i;
+
+$("addForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const msg = $("addMsg"), btn = $("addForm").querySelector("button");
+  const m = $("addInput").value.match(LINK_RE);
+  msg.className = "addmsg";
+  if (!m){ msg.textContent = "Paste the link from the Share button on Swiggy's Light a Diya page."; msg.classList.add("err"); return; }
+  const url = m[0];
+  mine.add(url); saveMine();
+  if (links.some(l => l.url === url)){ msg.textContent = "Your link is already on the wall."; msg.classList.add("ok"); render(); return; }
+  if (FORM_ACTION.startsWith("__")){
+    // Google Form not set up yet: fall back to the repo's issue form, prefilled.
+    window.open("https://github.com/diyaindia/diya-wall/issues/new?template=diya.yml&link=" + encodeURIComponent(url), "_blank", "noopener");
+    msg.textContent = "Submit the page that opened to add your link.";
+    msg.classList.add("ok");
+    render();
+    return;
+  }
+  btn.disabled = true;
+  try {
+    await fetch(FORM_ACTION, {method: "POST", mode: "no-cors", body: new URLSearchParams({[FORM_FIELD]: url})});
+    $("addInput").value = "";
+    msg.textContent = "Added! Others will see it within 15 minutes.";
+    msg.classList.add("ok");
+  } catch {
+    msg.textContent = "Couldn't add it. Check your connection and try again.";
+    msg.classList.add("err");
+  }
+  btn.disabled = false;
+  render();
+});
+
+// Fresh random order on every visit, so lights spread across all links
+// instead of everyone opening the same newest ones first.
+function shuffle(a){ for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
 fetch("links.json", {cache: "no-store"})
   .then(r => r.json())
-  .then(d => { links = d.links || []; $("upd").textContent = "Updated " + ago(d.updated); render(); })
+  .then(d => { links = shuffle(d.links || []); $("upd").textContent = "Updated " + ago(d.updated); render(); })
   .catch(() => { $("go").textContent = "Couldn't load links"; $("nLive").textContent = "0"; });
 </script>
 </body>

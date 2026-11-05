@@ -15,7 +15,7 @@ import sys
 import time
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "links.json")
 KEEP = 600  # newest links kept on the wall
@@ -62,6 +62,28 @@ def from_github():
         if len(items) < 100:
             break
         page += 1
+    return out
+
+
+def from_form():
+    """Links added on the page go to a Google Form; its response sheet is published as CSV."""
+    url = os.environ.get("FORM_CSV_URL", "")
+    if not url:
+        return []
+    import csv, io
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    text = urllib.request.urlopen(req, timeout=30).read().decode("utf-8")
+    out = []
+    for row in list(csv.reader(io.StringIO(text)))[1:]:
+        if len(row) < 2:
+            continue
+        try:  # Sheets writes form timestamps as M/D/YYYY H:MM:SS in the sheet's time zone (set to IST)
+            at = datetime.strptime(row[0], "%m/%d/%Y %H:%M:%S").replace(tzinfo=timezone(timedelta(hours=5, minutes=30)))
+            at = at.astimezone(timezone.utc).isoformat(timespec="seconds")
+        except ValueError:
+            at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        for l in links_in(row[1]):
+            out.append({"url": l, "src": "submitted", "at": at, "ref": ""})
     return out
 
 
@@ -133,7 +155,7 @@ def main():
     except Exception:
         old = []
     seen = {key(l["url"]): l for l in old}
-    for name, fn in (("github", from_github), ("reddit", from_reddit), ("x", from_x)):
+    for name, fn in (("form", from_form), ("github", from_github), ("reddit", from_reddit), ("x", from_x)):
         try:
             got = fn()
         except Exception as e:  # one source failing must not wipe the wall
