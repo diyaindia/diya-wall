@@ -1,0 +1,13 @@
+name: Add my diya link
+description: Put your Light a Diya link on the wall
+title: "Diya link"
+labels: ["diya-link"]
+body:
+  - type: input
+    id: link
+    attributes:
+      label: Your Light a Diya link
+      description: Copy it from the Share button on the Light a Diya page in the Swiggy app.
+      placeholder: https://r.swiggy.com/light-diya/...
+    validations:
+      required: true

@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diya Wall</title>
+<meta name="description" content="Light Light a Diya links people posted on X and Reddit. Both of you earn Free Cash.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪔</text></svg>">
+<style>
+  :root{
+    --bg:#1a0d1f; --card:#2a1530; --line:#43264b; --ink:#fbefe0; --mute:#c7a9b9;
+    --gold:#ffb938; --gold2:#ff7a1a; --ok:#6fd38b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  body{background:radial-gradient(120% 60% at 50% -10%,#4a1f3f 0%,var(--bg) 60%) fixed}
+  main{max-width:560px;margin:0 auto;padding:28px 16px 64px}
+  h1{font-size:30px;margin:0 0 6px;letter-spacing:-.01em}
+  .sub{color:var(--mute);margin:0 0 22px}
+  .stats{display:flex;gap:10px;margin:0 0 18px}
+  .stat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+  .stat b{display:block;font-size:24px;color:var(--gold)}
+  .stat span{font-size:13px;color:var(--mute)}
+  .go{display:block;text-align:center;text-decoration:none;font-weight:700;font-size:19px;color:#2a1000;
+    background:linear-gradient(180deg,var(--gold),var(--gold2));border-radius:16px;padding:18px;
+    box-shadow:0 8px 30px -8px #ff9a2a88;transition:transform .1s}
+  .go:active{transform:scale(.98)}
+  .go.off{background:var(--card);color:var(--mute);box-shadow:none;border:1px solid var(--line);pointer-events:none}
+  .hint{font-size:13px;color:var(--mute);text-align:center;margin:10px 0 26px}
+  .row{display:flex;justify-content:space-between;align-items:center;margin:0 0 10px}
+  h2{font-size:16px;margin:0}
+  .tabs{display:flex;gap:6px}
+  .tabs button{background:none;border:1px solid var(--line);color:var(--mute);border-radius:999px;
+    padding:4px 10px;font:inherit;font-size:13px;cursor:pointer}
+  .tabs button[aria-pressed=true]{border-color:var(--gold);color:var(--gold)}
+  ul{list-style:none;margin:0;padding:0}
+  li{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);
+    border-radius:12px;padding:10px 12px;margin:0 0 8px}
+  li.done{opacity:.45}
+  .src{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:3px 7px;
+    border-radius:6px;background:#ffffff14;color:var(--mute);flex:none}
+  .meta{flex:1;min-width:0}
+  .meta div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+  .meta small{color:var(--mute);font-size:12px}
+  .meta small a{color:inherit}
+  .open{flex:none;text-decoration:none;color:var(--gold);border:1px solid var(--gold);border-radius:10px;
+    padding:6px 12px;font-size:14px;font-weight:600}
+  li.done .open{color:var(--ok);border-color:var(--ok)}
+  .empty{color:var(--mute);text-align:center;padding:24px 0}
+  .add{display:block;text-align:center;margin:26px 0 0;padding:14px;border-radius:14px;
+    border:1px dashed var(--line);color:var(--ink);text-decoration:none}
+  footer{color:var(--mute);font-size:12px;text-align:center;margin-top:28px}
+  footer button{background:none;border:0;color:inherit;text-decoration:underline;font:inherit;cursor:pointer}
+</style>
+</head>
+<body>
+<main>
+  <h1>🪔 Diya Wall</h1>
+  <p class="sub">Light a Diya links people posted on X, Reddit and here. Every diya you light earns Free Cash for you and for them.</p>
+
+  <div class="stats">
+    <div class="stat"><b id="nLive">…</b><span>diyas waiting</span></div>
+    <div class="stat"><b id="nMine">0</b><span>you've lit</span></div>
+  </div>
+
+  <a id="go" class="go off" target="_blank" rel="noopener">Loading…</a>
+  <p class="hint">Open this page on the phone that has the Swiggy app. Each tap opens one diya in Swiggy; come back and tap again.</p>
+
+  <div class="row">
+    <h2>All links</h2>
+    <div class="tabs" role="group" aria-label="Filter">
+      <button data-f="todo" aria-pressed="true">To light</button>
+      <button data-f="all" aria-pressed="false">All</button>
+    </div>
+  </div>
+  <ul id="list"></ul>
+
+  <a id="add" class="add" target="_blank" rel="noopener">➕ Add your link to the wall</a>
+
+  <footer>
+    <span id="upd"></span> · Ends 9 Nov ·
+    <button id="reset">Reset my progress</button>
+  </footer>
+</main>
+
+<script>
+const DONE_KEY = "diya-wall-done";
+const store = {
+  get(){ try { return new Set(JSON.parse(localStorage.getItem(DONE_KEY) || "[]")); } catch { return new Set(); } },
+  set(s){ try { localStorage.setItem(DONE_KEY, JSON.stringify([...s])); } catch {} }
+};
+let done = store.get(), links = [], filter = "todo";
+const $ = id => document.getElementById(id);
+const SRC = {x:"X", reddit:"Reddit", submitted:"Added"};
+
+function ago(iso){
+  const m = Math.max(1, Math.round((Date.now() - new Date(iso)) / 60000));
+  return m < 60 ? m + "m ago" : m < 1440 ? Math.round(m/60) + "h ago" : Math.round(m/1440) + "d ago";
+}
+function short(u){ return "Diya " + u.replace(/\/+$/, "").split("/").pop(); }
+
+function mark(url){ done.add(url); store.set(done); render(); }
+
+function render(){
+  const todo = links.filter(l => !done.has(l.url));
+  $("nLive").textContent = todo.length;
+  $("nMine").textContent = links.filter(l => done.has(l.url)).length;
+
+  const go = $("go");
+  if (todo.length){
+    go.href = todo[0].url;
+    go.textContent = "Light the next diya →";
+    go.classList.remove("off");
+  } else {
+    go.removeAttribute("href");
+    go.textContent = links.length ? "All lit! Check back soon" : "No links yet";
+    go.classList.add("off");
+  }
+
+  const shown = filter === "todo" ? todo : links;
+  $("list").innerHTML = "";
+  if (!shown.length){
+    $("list").innerHTML = '<li class="empty" style="display:block;border:0;background:none">Nothing here yet.</li>';
+    return;
+  }
+  for (const l of shown.slice(0, 200)){
+    const li = document.createElement("li");
+    if (done.has(l.url)) li.className = "done";
+    li.innerHTML = `<span class="src"></span><div class="meta"><div></div><small></small></div><a class="open" target="_blank" rel="noopener"></a>`;
+    li.querySelector(".src").textContent = SRC[l.src] || l.src;
+    li.querySelector(".meta div").textContent = short(l.url);
+    const sm = li.querySelector("small");
+    sm.textContent = ago(l.at) + (l.ref ? " · " : "");
+    if (l.ref){ const a = document.createElement("a"); a.href = l.ref; a.target = "_blank"; a.rel = "noopener"; a.textContent = "post"; sm.append(a); }
+    const open = li.querySelector(".open");
+    open.href = l.url;
+    open.textContent = done.has(l.url) ? "Lit ✓" : "Light";
+    open.addEventListener("click", () => setTimeout(() => mark(l.url), 50));
+    $("list").append(li);
+  }
+}
+
+$("go").addEventListener("click", () => { const u = $("go").getAttribute("href"); if (u) setTimeout(() => mark(u), 50); });
+document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => {
+  filter = b.dataset.f;
+  document.querySelectorAll(".tabs button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  render();
+}));
+$("reset").addEventListener("click", () => { if (confirm("Forget which diyas you've lit on this phone?")) { done = new Set(); store.set(done); render(); } });
+
+// "Add your link" opens the repo's issue form. Works out the repo from <owner>.github.io/<repo>/.
+(function(){
+  const owner = location.hostname.endsWith(".github.io") ? location.hostname.split(".")[0] : "OWNER";
+  const repo = location.pathname.split("/").filter(Boolean)[0] || "diya-wall";
+  $("add").href = `https://github.com/${owner}/${repo}/issues/new?template=diya.yml`;
+})();
+
+fetch("links.json", {cache: "no-store"})
+  .then(r => r.json())
+  .then(d => { links = d.links || []; $("upd").textContent = "Updated " + ago(d.updated); render(); })
+  .catch(() => { $("go").textContent = "Couldn't load links"; $("nLive").textContent = "0"; });
+</script>
+</body>
+</html>
