@@ -253,7 +253,7 @@ $("addForm").addEventListener("submit", async e => {
     const r = await fetch(INBOX, {method: "POST", body: url});
     if (!r.ok) throw new Error(r.status);
     $("addInput").value = "";
-    msg.textContent = "Dropped! It hits the loot list within 15 minutes.";
+    msg.textContent = "Dropped! It's on the loot list now.";
     msg.classList.add("ok");
   } catch {
     msg.textContent = "Couldn't add it. Check your connection and try again.";
@@ -267,10 +267,34 @@ $("addForm").addEventListener("submit", async e => {
 // instead of everyone opening the same newest ones first.
 function shuffle(a){ for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
-fetch("links.json", {cache: "no-store"})
-  .then(r => r.json())
-  .then(d => { links = shuffle(d.links || []); $("upd").textContent = "Updated " + ago(d.updated); render(); })
-  .catch(() => { $("go").textContent = "Couldn't load links"; $("nLive").textContent = "0"; });
+// Links dropped in the last 12 hours are read straight from the inbox, so they show up
+// at once instead of waiting for the scheduled job (GitHub runs it every few hours at worst).
+// Each one goes through the same strict check as the Drop box.
+async function inboxLinks(){
+  try {
+    const r = await fetch(INBOX + "/json?poll=1&since=12h", {cache: "no-store"});
+    if (!r.ok) return [];
+    const out = [];
+    for (const line of (await r.text()).split("\n")){
+      let ev; try { ev = JSON.parse(line); } catch { continue; }
+      if (ev.event !== "message") continue;
+      const res = checkLink(ev.message);
+      if (res.url) out.push({url: res.url, src: "submitted", at: new Date(ev.time * 1000).toISOString(), ref: ""});
+    }
+    return out;
+  } catch { return []; }
+}
+
+Promise.all([
+  fetch("links.json", {cache: "no-store"}).then(r => r.json()),
+  inboxLinks()
+]).then(([d, fresh]) => {
+  const all = d.links || [], seen = new Set(all.map(l => l.url));
+  for (const l of fresh) if (!seen.has(l.url)){ seen.add(l.url); all.push(l); }
+  links = shuffle(all);
+  $("upd").textContent = "Updated " + ago(fresh.length ? fresh.map(l => l.at).sort().pop() : d.updated);
+  render();
+}).catch(() => { $("go").textContent = "Couldn't load links"; $("nLive").textContent = "0"; });
 </script>
 </body>
 </html>
