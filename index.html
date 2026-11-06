@@ -136,6 +136,8 @@
 </main>
 
 <script>
+// Tap events for GoatCounter. Safe to call before count.js loads or if it is blocked.
+function track(name){ try { window.goatcounter && window.goatcounter.count && window.goatcounter.count({path: name, title: name, event: true}); } catch {} }
 const DONE_KEY = "diya-wall-done";
 const store = {
   get(){ try { return new Set(JSON.parse(localStorage.getItem(DONE_KEY) || "[]")); } catch { return new Set(); } },
@@ -193,12 +195,12 @@ function render(){
     const open = li.querySelector(".open");
     open.href = l.url;
     open.textContent = done.has(l.url) ? "Looted ✓" : "Loot";
-    open.addEventListener("click", () => setTimeout(() => mark(l.url), 50));
+    open.addEventListener("click", () => { if (!done.has(l.url)) track("tap-loot-row"); setTimeout(() => mark(l.url), 50); });
     $("list").append(li);
   }
 }
 
-$("go").addEventListener("click", () => { const u = $("go").getAttribute("href"); if (u) setTimeout(() => mark(u), 50); });
+$("go").addEventListener("click", () => { const u = $("go").getAttribute("href"); if (u){ track("tap-loot-next"); setTimeout(() => mark(u), 50); } });
 document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => {
   filter = b.dataset.f;
   document.querySelectorAll(".tabs button").forEach(x => x.setAttribute("aria-pressed", x === b));
@@ -244,7 +246,7 @@ $("addForm").addEventListener("submit", async e => {
   const msg = $("addMsg"), btn = $("addForm").querySelector("button");
   const res = checkLink($("addInput").value);
   msg.className = "addmsg";
-  if (res.error){ msg.textContent = res.error; msg.classList.add("err"); return; }
+  if (res.error){ msg.textContent = res.error; msg.classList.add("err"); track("drop-rejected"); return; }
   const url = res.url;
   mine.add(url); saveMine();
   if (links.some(l => l.url === url)){ msg.textContent = "Your link is already on the loot list."; msg.classList.add("ok"); render(); return; }
@@ -254,6 +256,7 @@ $("addForm").addEventListener("submit", async e => {
     if (!r.ok) throw new Error(r.status);
     $("addInput").value = "";
     msg.textContent = "Dropped! It's on the loot list now.";
+    track("drop-added");
     msg.classList.add("ok");
   } catch {
     msg.textContent = "Couldn't add it. Check your connection and try again.";
@@ -296,5 +299,7 @@ Promise.all([
   render();
 }).catch(() => { $("go").textContent = "Couldn't load links"; $("nLive").textContent = "0"; });
 </script>
+<!-- Visitor counts: https://swiggyloot.goatcounter.com (no cookies) -->
+<script data-goatcounter="https://swiggyloot.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>
